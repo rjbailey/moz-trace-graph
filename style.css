@@ -1,0 +1,28 @@
+body {
+  width: 900px;
+  margin: 100px auto;
+}
+
+#visualization {
+  border: solid 1px #999;
+  overflow: hidden;
+  width: 900px;
+  height: 400px;
+}
+
+canvas {
+  float: left;
+}
+
+a {
+  color: steelblue;
+}
+
+p {
+  font-family: Verdana, Arial;
+  font-size: 80%;
+}
+
+p.rel {
+  font-size: 70%;
+}
