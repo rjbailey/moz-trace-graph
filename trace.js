@@ -22,7 +22,7 @@ function Trace(client, name) {
 
   // Used only while collecting trace data
   this._stack = [this]; // Frames on current call stack
-  this._functionIds = new Map(); // name:location -> function ID
+  this._functionIds = {}; // name:location -> function ID
 
   this.onEnteredFrame = this.onEnteredFrame.bind(this);
   this.onExitedFrame = this.onExitedFrame.bind(this);
@@ -62,7 +62,8 @@ Trace.prototype = {
     var jsonObj = Object.create(null);
     jsonObj.functions = this.functions;
     jsonObj.children = [];
-    for (var child of this.children) {
+    for (var key in this.children) {
+      var child = this.children[key];
       jsonObj.children.push(this._frameToJSONObj(child));
     }
     return JSON.stringify(jsonObj);
@@ -88,14 +89,16 @@ Trace.prototype = {
       "yield"
     ];
 
-    for (var prop of propsToCopy) {
+    for (var key in propsToCopy) {
+      var prop = propsToCopy[key];
       if (frame.hasOwnProperty(prop)) {
         jsonObj[prop] = frame[prop];
       }
     }
 
     jsonObj.children = [];
-    for (var child of frame.children) {
+    for (var key in frame.children) {
+      var child = frame.children[key];
       jsonObj.children.push(this._frameToJSONObj(child));
     }
 
@@ -147,8 +150,8 @@ Trace.prototype = {
 
     // Add reference to aggregated info, creating it if necessary
     var key = locationToString(packet.location, packet.name);
-    if (!this._functionIds.has(key)) {
-      this._functionIds.set(key, this.functions.length);
+    if (!this._functionIds[key]) {
+      this._functionIds[key] = this.functions.length;
       this.functions.push({
         count: 0,
         name: packet.name,
@@ -156,7 +159,7 @@ Trace.prototype = {
         parameterNames: packet.parameterNames
       });
     }
-    frame.fid = this._functionIds.get(key);
+    frame.fid = this._functionIds[key]
     var aggregated = this.functions[frame.fid];
     aggregated.count++;
     frame.aggregated = aggregated;
@@ -200,7 +203,8 @@ Trace.prototype = {
       frame.endTime = packet.time;
       frame.totalTime = frame.endTime - frame.startTime;
       var selfTime = frame.totalTime;
-      for (var child of frame.children) {
+      for (var key in frame.children) {
+        var child = frame.children[key];
         selfTime -= child.totalTime;
       }
       frame.selfTime = selfTime;
@@ -216,7 +220,9 @@ Trace.prototype = {
         this.endTime = frame.endTime;
       }
 
-      for (var type of ["return", "throw", "yield"]) {
+      var types = ["return", "throw", "yield"];
+      for (var key in types) {
+        var type = types[key];
         if (typeof packet[type] !== "undefined") {
           frame[type] = packet[type];
         }

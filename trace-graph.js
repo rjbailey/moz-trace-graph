@@ -15,6 +15,7 @@ function TraceGraph(element) {
 
   this.element.addEventListener("overflow", this._onResize.bind(this));
   this.element.addEventListener("wheel", this._onWheel.bind(this));
+  this.element.addEventListener("mousewheel", this._onMouseWheel.bind(this));
 
   EventEmitter.decorate(this);
 };
@@ -61,6 +62,26 @@ TraceGraph.prototype = {
 
     var dx = ev.deltaX;
     var dy = ev.deltaY;
+
+    if (Math.abs(dy) > Math.abs(dx)) {
+      bounds.zoom(dy);
+    } else {
+      bounds.pan(dx);
+    }
+  },
+
+  _onMouseWheel: function(ev) {
+    ev.preventDefault();
+
+    if (!this._trace || !this._trace.finished) {
+      return;
+    }
+
+    var trace  = this._trace;
+    var bounds = this._bounds;
+
+    var dx = -ev.wheelDeltaX;
+    var dy = -ev.wheelDeltaY;
 
     if (Math.abs(dy) > Math.abs(dx)) {
       bounds.zoom(dy);
@@ -244,7 +265,11 @@ TraceView.prototype = {
       color = colors.get(frame.name);
     }
 
-    var [x, y, w, h] = this._frameRect(frame);
+    var rect = this._frameRect(frame);
+    var x = rect[0];
+    var y = rect[1];
+    var w = rect[2];
+    var h = rect[3];
 
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
@@ -281,7 +306,8 @@ TraceView.prototype = {
     var trace  = this._trace;
     var bounds = this._bounds;
     var zoomed = this._isZoomView;
-    var {width, height} = this._canvas;
+    var width  = this._canvas.width;
+    var height = this._canvas.height;
 
     var x = width * bounds.percentageFromTime(frame.startTime, zoomed);
     var w = width * (frame.endTime
@@ -310,11 +336,11 @@ function MainView(graph, bounds) {
   this._showNames = true;
 
   var mousePressed, dragging, dragX;
-  this._canvas.addEventListener("mousedown", (ev) => {
+  this._canvas.addEventListener("mousedown", function(ev) {
     mousePressed = true;
     dragX = ev.layerX;
-  });
-  this._canvas.addEventListener("mousemove", (ev) => {
+  }.bind(this));
+  this._canvas.addEventListener("mousemove", function(ev) {
     if (mousePressed) {
       dragging = true;
     }
@@ -322,18 +348,18 @@ function MainView(graph, bounds) {
       this._bounds.panByPercent((dragX - ev.layerX) / this._canvas.width);
       dragX = ev.layerX;
     }
-  });
-  this._canvas.addEventListener("mouseup", (ev) => {
+  }.bind(this));
+  this._canvas.addEventListener("mouseup", function(ev) {
     if (mousePressed && !dragging) {
       this._onClick(ev);
     }
     mousePressed = false;
     dragging = false;
-  });
-  this._canvas.addEventListener("mouseout", () => {
+  }.bind(this));
+  this._canvas.addEventListener("mouseout", function() {
     mousePressed = false;
     dragging = false;
-  });
+  }.bind(this));
 }
 
 MainView.prototype = {
@@ -343,7 +369,8 @@ MainView.prototype = {
   },
 
   _renderChildren: function(frame) {
-    var {leftTime, rightTime} = this._bounds;
+    var leftTime = this._bounds.leftTime;
+    var rightTime = this._bounds.rightTime;
     var children = frame.children;
 
     if (frame.totalTime === 0)
@@ -374,7 +401,8 @@ MainView.prototype = {
     var bounds = this._bounds;
     var frames = trace.frames;
     var children = trace.children;
-    var {width, height} = this._canvas;
+    var width  = this._canvas.width;
+    var height = this._canvas.height;
 
     var x = ev.layerX;
     var y = ev.layerY;
@@ -421,21 +449,21 @@ function Overview(graph, bounds) {
   TraceView.call(this, graph, bounds);
   this._bufferStale = true;
 
-  this._canvas.addEventListener("mousedown", (ev) => {
+  this._canvas.addEventListener("mousedown", function(ev) {
     this._dragging = true;
     this._recenter(ev);
-  });
-  this._canvas.addEventListener("mousemove", (ev) => {
+  }.bind(this));
+  this._canvas.addEventListener("mousemove", function(ev) {
     if (this._dragging) {
       this._recenter(ev);
     }
-  });
-  this._canvas.addEventListener("mouseup", () => {
+  }.bind(this));
+  this._canvas.addEventListener("mouseup", function() {
     this._dragging = false;
-  });
-  this._canvas.addEventListener("mouseout", () => {
+  }.bind(this));
+  this._canvas.addEventListener("mouseout", function() {
     this._dragging = false;
-  });
+  }.bind(this));
 }
 
 Overview.prototype = {
@@ -452,14 +480,16 @@ Overview.prototype = {
 
   _doRender: function() {
     var bounds = this._bounds;
-    var {width, height} = this._canvas;
+    var width  = this._canvas.width;
+    var height = this._canvas.height;
 
     if (this._bufferStale) {
       // render frames to canvas
       this._ctx.clearRect(0, 0, width, height);
       this._ctx.fillStyle = "rgb(200, 200, 200)";
       this._ctx.fillRect(0, 0, width, height);
-      for (var frame of this._trace.frames) {
+      for (var key in this._trace.frames) {
+        var frame = this._trace.frames[key];
         this._renderFrame(frame);
       }
 

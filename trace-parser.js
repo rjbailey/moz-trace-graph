@@ -4,7 +4,7 @@
 
 "use strict";
 
-const parseTrace = function(data) {
+var parseTrace = function(data) {
   if (typeof data === "string") {
     data = JSON.parse(data);
   }
@@ -24,7 +24,8 @@ const parseTrace = function(data) {
 
     trace.onEnteredFrame(null, packet);
 
-    for (var child of frame.children) {
+    for (var key in frame.children) {
+      var child = frame.children[key];
       enterFrame(child);
     }
 
@@ -42,7 +43,8 @@ const parseTrace = function(data) {
     trace.onExitedFrame(null, packet);
   }
 
-  for (var child of data.children) {
+  for (var key in data.children) {
+    var child = data.children[key];
     enterFrame(child);
   }
 

@@ -71,7 +71,7 @@ EventEmitter.prototype = {
       return;
     var listeners = this._eventEmitterListeners.get(aEvent);
     if (listeners) {
-      this._eventEmitterListeners.set(aEvent, listeners.filter(function(l) aListener != l));
+      this._eventEmitterListeners.set(aEvent, listeners.filter(function(l) { return aListener != l; }));
     }
   },
 
@@ -84,7 +84,8 @@ EventEmitter.prototype = {
       return;
 
     var originalListeners = this._eventEmitterListeners.get(aEvent);
-    for (var listener of this._eventEmitterListeners.get(aEvent)) {
+    for (var key in originalListeners) {
+      var listener = this._eventEmitterListeners.get(aEvent)[key];
       // If the object was destroyed during event emission, stop
       // emitting.
       if (!this._eventEmitterListeners) {
@@ -94,7 +95,7 @@ EventEmitter.prototype = {
       // If listeners were removed during emission, make sure the
       // event handler we're going to fire wasn't removed.
       if (originalListeners === this._eventEmitterListeners.get(aEvent) ||
-          this._eventEmitterListeners.get(aEvent).some(function(l) l === listener)) {
+          this._eventEmitterListeners.get(aEvent).some(function(l) { return l === listener; })) {
         try {
           listener.apply(null, arguments);
         }
