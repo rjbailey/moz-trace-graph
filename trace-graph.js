@@ -4,6 +4,9 @@
 
 "use strict";
 
+var DPR = window.devicePixelRatio;
+var MAX_FONT_SIZE = 12 * DPR;
+
 /**
  * Main display for trace contents.
  */
@@ -191,10 +194,13 @@ TraceView.prototype = {
   resize: function(width, height) {
     var canvas = this._canvas, buffer = this._buffer;
 
-    canvas.width = width;
-    canvas.height = height;
-    buffer.width = width;
-    buffer.height = height;
+    canvas.width = width * DPR;
+    canvas.height = height * DPR;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+
+    this._width = width;
+    this._height = height;
 
     // render synchronously to avoid flickering
     this._render();
@@ -241,9 +247,10 @@ TraceView.prototype = {
     ctx.fillRect(x, y, w, h);
 
     if (this._showNames && w > 20) {
-      var padding = 5;
-      var maxWidth = (x < 0) ? w + x - padding : w - 2 * padding;
-      var fontSize = Math.min(h-2, 12);
+      var hPadding = 3 * DPR;
+      var vPadding = 1 * DPR;
+      var maxWidth = (x < 0) ? w + x - hPadding : w - 2 * hPadding;
+      var fontSize = Math.min((h-2*vPadding)|0, MAX_FONT_SIZE);
       var name = frame.name;
 
       if (maxWidth < 10) {
@@ -255,7 +262,7 @@ TraceView.prototype = {
       ctx.fillStyle = selected ? "black" : "white";
 
       if (ctx.measureText(name).width > maxWidth) {
-        while (ctx.measureText(name + "...").width > maxWidth) {
+        while (name.length && ctx.measureText(name + "...").width > maxWidth) {
           name = name.substring(0, name.length-1);
         }
         name += "...";
@@ -264,7 +271,7 @@ TraceView.prototype = {
         }
       }
 
-      ctx.fillText(name, (x < 0 ? 0 : x) + padding, y + h/2, maxWidth);
+      ctx.fillText(name, (x < 0 ? 0 : x) + hPadding, y + h/2, maxWidth);
     }
   },
 
@@ -326,7 +333,7 @@ TraceView.prototype = {
 
 function MainView(graph, bounds) {
   TraceView.call(this, graph, bounds);
-  this._vGap = 2;
+  this._vGap = 2 * DPR;
   this._isZoomView = true;
   this._showNames = true;
 
@@ -340,7 +347,7 @@ function MainView(graph, bounds) {
       dragging = true;
     }
     if (dragging) {
-      this._bounds.panByPercent((dragX - ev.layerX) / this._canvas.width);
+      this._bounds.panByPercent((dragX - ev.layerX) / this._width);
       dragX = ev.layerX;
     }
   }.bind(this));
@@ -488,7 +495,6 @@ function getColor() {
 }
 
 var colors = new Map();
-
 
 function binarySearch(key, array, comparator) {
   var first = 0;
