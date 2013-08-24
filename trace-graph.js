@@ -350,9 +350,6 @@ function MainView(graph, bounds) {
     }
   }.bind(this));
   this._canvas.addEventListener("mouseup", function(ev) {
-    if (mousePressed && !dragging) {
-      this._onClick(ev);
-    }
     mousePressed = false;
     dragging = false;
   }.bind(this));
@@ -393,51 +390,6 @@ MainView.prototype = {
       }
       this._renderFrame(child);
       this._renderChildren(child);
-    }
-  },
-
-  _onClick: function(ev) {
-    var trace  = this._trace;
-    var bounds = this._bounds;
-    var frames = trace.frames;
-    var children = trace.children;
-    var width  = this._canvas.width;
-    var height = this._canvas.height;
-
-    var x = ev.layerX;
-    var y = ev.layerY;
-    var time = bounds.timeFromPercentage(x / width, true);
-    var depth = ((height - y) / (height / trace.maxDepth)) | 0;
-
-    var idx = binarySearch(time, children, function(time, frame) {
-      if (frame.startTime > time) {
-        return -1;
-      } else if (frame.endTime < time) {
-        return 1;
-      } else {
-        return 0;
-      }
-    });
-    if (idx < 0) {
-      idx = -(idx + 1);
-    }
-
-    var childUid = children[idx].uid;
-    var nextUid = children[idx+1] ? children[idx+1].uid : frames.length;
-
-    for (var i = childUid; i < nextUid; ++i) {
-      var frame = frames[i];
-      if (frame.depth === depth
-          && frame.startTime <= time
-          && frame.endTime >= time) {
-        if (this._selected === frame.uid) {
-          break;
-        }
-        this._selected = frame.uid;
-        this._graph.refresh();
-        this._graph.emit("select", frame.uid);
-        break;
-      }
     }
   },
 
