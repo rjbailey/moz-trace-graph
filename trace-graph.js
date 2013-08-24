@@ -14,8 +14,6 @@ function TraceGraph(element) {
   this._bounds = new TraceBounds();
 
   this.element.addEventListener("overflow", this._onResize.bind(this));
-  this.element.addEventListener("wheel", this._onWheel.bind(this));
-  this.element.addEventListener("mousewheel", this._onMouseWheel.bind(this));
 
   EventEmitter.decorate(this);
 };
@@ -49,46 +47,6 @@ TraceGraph.prototype = {
     this._mainView.resize(rect.width, rect.height - overviewHeight);
     this._overview.resize(rect.width, overviewHeight);
   },
-
-  _onWheel: function(ev) {
-    ev.preventDefault();
-
-    if (!this._trace || !this._trace.finished) {
-      return;
-    }
-
-    var trace  = this._trace;
-    var bounds = this._bounds;
-
-    var dx = ev.deltaX;
-    var dy = ev.deltaY;
-
-    if (Math.abs(dy) > Math.abs(dx)) {
-      bounds.zoom(dy);
-    } else {
-      bounds.pan(dx);
-    }
-  },
-
-  _onMouseWheel: function(ev) {
-    ev.preventDefault();
-
-    if (!this._trace || !this._trace.finished) {
-      return;
-    }
-
-    var trace  = this._trace;
-    var bounds = this._bounds;
-
-    var dx = -ev.wheelDeltaX;
-    var dy = -ev.wheelDeltaY;
-
-    if (Math.abs(dy) > Math.abs(dx)) {
-      bounds.zoom(dy);
-    } else {
-      bounds.pan(dx);
-    }
-  }
 };
 
 
@@ -161,14 +119,19 @@ TraceBounds.prototype = {
     return percent * this._totalTime;
   },
 
-  zoom: function(value) {
-    var zoom = this.intervalWidth * value / 1000;
+  zoom: function(value, centerPercent) {
+    var zoom = this.intervalWidth * value / 500;
     var minWidth = this._minimumIntervalWidth;
     if (this.intervalWidth + 2 * zoom < minWidth) {
       var center = this.center;
       this.setBounds(center - minWidth / 2, center + minWidth / 2, "zoom");
     } else {
-      this.setBounds(this._left - zoom, this._right + zoom, "zoom");
+      if (typeof centerPercent === "undefined") {
+        centerPercent = 0.5;
+      }
+      var lZoom = zoom * centerPercent;
+      var rZoom = zoom * (1.0 - centerPercent);
+      this.setBounds(this._left - lZoom, this._right + rZoom, "zoom");
     }
   },
 
@@ -209,6 +172,9 @@ function TraceView(graph, bounds) {
     this._bounds = bounds;
     this._bounds.on("changed", this._onBoundsChanged);
   }
+
+  canvas.addEventListener("wheel", this._onWheel.bind(this));
+  canvas.addEventListener("mousewheel", this._onMouseWheel.bind(this));
 
   element.appendChild(canvas);
 }
@@ -321,6 +287,35 @@ TraceView.prototype = {
     }
 
     return [x, y, w, h];
+  },
+
+  _zoom: function(ev, dx, dy) {
+    ev.preventDefault();
+
+    if (!this._trace || !this._trace.finished) {
+      return;
+    }
+
+    var trace  = this._trace;
+    var bounds = this._bounds;
+
+    if (Math.abs(dy) > Math.abs(dx)) {
+      if (this._isZoomView) {
+        bounds.zoom(dy, ev.layerX / this._width);
+      } else {
+        bounds.zoom(dy);
+      }
+    } else {
+      bounds.pan(dx);
+    }
+  },
+
+  _onWheel: function(ev) {
+    this._zoom(ev, ev.deltaX, ev.deltaY);
+  },
+
+  _onMouseWheel: function(ev) {
+    this._zoom(ev, -ev.wheelDeltaX, -ev.wheelDeltaY);
   },
 
   _onBoundsChanged: function(ev, why) {
