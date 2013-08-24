@@ -6,6 +6,12 @@
 
     <link href="style.css" rel="stylesheet" />
 
+    <!-- Fork ribbon from https://github.com/simonwhitaker/github-fork-ribbon-css -->
+    <link rel="stylesheet" href="gh-fork-ribbon.css" />
+    <!--[if IE]>
+        <link rel="stylesheet" href="gh-fork-ribbon.ie.css" />
+    <![endif]-->
+
     <script src="data.js"></script>
     <script src="event-emitter.js"></script>
     <script src="trace.js"></script>
@@ -15,6 +21,11 @@
   </head>
 
   <body>
+    <div class="github-fork-ribbon-wrapper right">
+      <div class="github-fork-ribbon">
+        <a href="https://github.com/rjbailey/moz-trace-graph">Fork me on GitHub</a>
+      </div>
+    </div>
 
     <div id="visualization"></div>
 
