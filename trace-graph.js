@@ -474,7 +474,7 @@ Overview.prototype = {
   },
 
   _recenter: function(ev) {
-    this._bounds.center = ev.layerX / this._canvas.width;
+    this._bounds.center = ev.layerX * DPR / this._canvas.width;
   },
 
   __proto__: TraceView.prototype
